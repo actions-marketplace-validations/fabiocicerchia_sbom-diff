@@ -26,6 +26,7 @@ jobs:
     if: github.actor != 'dependabot[bot]'
     # read the code, post the review, and upload code-scanning results.
     permissions:
+      actions: read # private repo: upload-sarif reads this run's metadata
       contents: read
       packages: read # pull the ghcr scanner image
       pull-requests: write
@@ -37,7 +38,7 @@ jobs:
         with:
           fetch-depth: 0 # need base + head + their merge-base for the PR diff
 
-      - uses: fabiocicerchia/gandalf@786cdda8cdecb3f82fffbc3f85a6909fd7c8153b  # v0.12.2
+      - uses: fabiocicerchia/gandalf@f18419b1518a34e2736640325069fca044d0752a  # v0.12.4
         with:
           # Code scanning needs GitHub Advanced Security on a private repo.
           # Without it the ingest fails and takes the whole review down with
