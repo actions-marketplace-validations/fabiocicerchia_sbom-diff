@@ -119,6 +119,9 @@ outputs:
   markdown:
     description: 'The rendered report, JSON-encoded so it survives being an output'
     value: ${{ steps.diff.outputs.markdown }}
+  report:
+    description: 'Path to the JSON report, relative to the workspace.'
+    value: ${{ steps.diff.outputs.report }}
 
 runs:
   using: 'composite'
@@ -162,8 +165,10 @@ runs:
         base="${BASE_REF:-${PR_BASE:-$DEFAULT_BRANCH}}"
         # A shallow clone has no base commit. Fetching it explicitly is cheaper
         # than asking every caller for fetch-depth: 0 and quietly producing a
-        # meaningless diff when they forget.
-        git fetch --no-tags --depth=1 origin "+refs/heads/$base:refs/remotes/origin/$base" 2>/dev/null \
+        # meaningless diff when they forget — but only when it is missing: a
+        # fetch with persist-credentials: false asks for a password and dies.
+        git rev-parse --verify --quiet "refs/remotes/origin/$base" >/dev/null \
+          || git fetch --no-tags --depth=1 origin "+refs/heads/$base:refs/remotes/origin/$base" 2>/dev/null \
           || git fetch --no-tags origin "$base"
         git worktree add --detach "$work/base" "origin/$base" >/dev/null
 
@@ -232,6 +237,7 @@ runs:
           echo "glance=$(jq -r '[.review.tiers[]? | select(.id == "glance") | .count] | first // 0' \
             sbom-diff-result.json)"
           echo "markdown=$(jq -Rs . < sbom-diff-output.md)"
+          echo "report=sbom-diff-result.json"
           echo "unchanged=$(jq -r '[.counts.added, .counts.removed, .counts.changed] | add == 0' \
             sbom-diff-result.json)"
         } >> "$GITHUB_OUTPUT"
